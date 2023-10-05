@@ -16,7 +16,7 @@
                             @foreach ($withdrawals as $withdrawal)
                                 <tr>
                                     <td>{{ $withdrawal->created_at }}</td>
-                                    <td>{{ $withdrawal->amount }}</td>
+                                    <td>${{ $withdrawal->amount }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -28,6 +28,9 @@
             <div class="col-md-6">
                 <div class="container">
                     <h2 class="text-center">Withdraw Funds</h2>
+                    <div class="text-center">
+                        <button class="btn btn-secondary">Current Balance: ${{$currentBalance}}</button>
+                    </div>
 
                     <form method="POST" action="{{ route('transaction.withdrawal') }}">
                         @csrf

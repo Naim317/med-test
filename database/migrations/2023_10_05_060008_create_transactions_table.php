@@ -17,7 +17,7 @@ return new class extends Migration
             $table->enum('transaction_type', ['Deposit', 'Withdrawal']);
             $table->double('amount');
             $table->decimal('fee', 10, 2)->nullable();
-            $table->date('date')->nullable();
+            $table->date('date')->default(now());
             $table->timestamps();
         });
     }

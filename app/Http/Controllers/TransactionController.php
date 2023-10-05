@@ -51,7 +51,6 @@ class TransactionController extends Controller
                 'transaction_type' => 'Deposit',
                 'amount' => $request->amount,
                 'fee' => $request->fee,
-                'date' => $request->date,
             ]);
     
             return redirect()->route('transaction.index')->with('success', 'Amount Deposit successfull.');
@@ -66,12 +65,13 @@ class TransactionController extends Controller
     {
         // Fetch all withdrawal transactions for the authenticated user
         $user = auth()->user();
+        $currentBalance = $user->balance;
         $withdrawals = Transaction::where('user_id', $user->id)
             ->where('transaction_type', 'Withdrawal')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('transaction.withdrawal', compact('withdrawals'));
+        return view('transaction.withdrawal', compact('withdrawals', 'currentBalance'));
     }
 
     public function withdrawal(Request $request)
@@ -84,44 +84,66 @@ class TransactionController extends Controller
         // Get the authenticated user
         $user = auth()->user();
 
-        // Calculate the withdrawal fee based on the user's account type
-        $withdrawalFee = $user->account_type === 'Business' ? 0.025 : 0.015;
+        // Calculate the withdrawal fee based on account type
+        $accountType = $user->account_type;
+        $withdrawalAmount = $request->amount;
+        $fee = 0.0;
 
-        // Check if it's a Friday, and if it is, make the withdrawal free of charge
-        if (now()->isFriday()) {
-            $withdrawalFee = 0.00;
+        // Calculate the total withdrawal amount in the current month
+        $currentMonth = now()->format('Y-m');
+        $totalWithdrawalThisMonth = Transaction::where('user_id', $user->id)
+        ->where('transaction_type', 'Withdrawal')
+        ->where('date', 'LIKE', $currentMonth . '%')
+        ->sum('amount');
+        // dd($totalWithdrawalThisMonth);
+
+        // Check if it's a Friday and Check if the withdrawal amount is less than 1000 and totalWithdrawalThisMonth is less than 5000 then no fee will be added
+        if (now()->isFriday() || $withdrawalAmount < 1000 || $totalWithdrawalThisMonth <= 5000 && $withdrawalAmount <= 5000) {
+            if($totalWithdrawalThisMonth+$withdrawalAmount <= 5000){
+                $finalWithdrawalAmount = $withdrawalAmount;
+            }
+            else{
+                $ExtraWithdrawlWithFees = (($totalWithdrawalThisMonth + $withdrawalAmount) - 5000);
+                $fee = $ExtraWithdrawlWithFees * ($accountType === 'Individual' ? 0.015 : 0.025);
+                $withdrawalAmount += $fee;
+                $finalWithdrawalAmount = $withdrawalAmount;
+            }    
+        }
+        // Check if the user is a Business account and the total withdrawal exceeds 50K then decrease fees
+        elseif ($accountType === 'Business' && $totalWithdrawalThisMonth >= 50000 && $withdrawalAmount > 50000){
+            $fee = $withdrawalAmount * 0.015;
+            $withdrawalAmount += $fee;
+            $finalWithdrawalAmount = $withdrawalAmount;
+        }
+        // For Normal case
+        else {
+            $fee = $withdrawalAmount * ($accountType === 'Individual' ? 0.015 : 0.025);
+            $withdrawalAmount += $fee;
+            $finalWithdrawalAmount = $withdrawalAmount;
         }
 
-        // Calculate the total withdrawal amount including the fee
-        $totalWithdrawalAmount = $request->amount * (1 + $withdrawalFee);
-
         // Check if the user has sufficient balance for the withdrawal
-        if ($user->balance < $totalWithdrawalAmount) {
+        if ($user->balance < $finalWithdrawalAmount) {
             return redirect()->route('transaction.index')->with('error', 'Insufficient balance.');
         }
 
-        // Apply the withdrawal fee
-        $withdrawalAmount = $request->amount;
-        $feeAmount = $withdrawalAmount * $withdrawalFee;
-        $finalWithdrawalAmount = $withdrawalAmount - $feeAmount;
-
-        // Update the user's balance
-        $user->balance -= $totalWithdrawalAmount;
+        // Update the user's balance by deducting the withdrawn amount and fee
+        $user->balance -= $finalWithdrawalAmount;
         $user->save();
 
-        // Create a withdrawal transaction with the fee amount
-        try{
-            Transaction::create([
-                'user_id' => $user->id,
-                'transaction_type' => 'Withdrawal',
-                'amount' => $finalWithdrawalAmount,
-                'fee' => $feeAmount, // Store the fee in the transaction
-            ]);
-            return redirect()->route('transaction.index')->with('success', 'Amount Withdrawal successfull.');
-        }
-        catch(\Exception $e) {
-            // $msg = $e->getMessage();
-            return  redirect()->route('transaction.index')->with('fail', "Amount Withdrawal Failed! Please try again"); 
-        } 
+        // Create a withdrawal transaction with the fee
+        Transaction::create([
+            'user_id' => $user->id,
+            'transaction_type' => 'Withdrawal',
+            'amount' => $request->amount,
+            'fee' => $fee,
+        ]);
+
+        return redirect()->route('transaction.index')->with([
+            'success' => 'Withdrawal successful.',
+            'fee' => $fee,
+            'totalWithdrawalThisMonth' => $totalWithdrawalThisMonth,
+        ]);
     }
+
 }

@@ -15,8 +15,8 @@
                         <tbody>
                             @foreach ($deposits as $deposit)
                                 <tr>
-                                    <td>{{ $deposit->created_at }}</td>
-                                    <td>{{ $deposit->amount }}</td>
+                                    <td>{{ $deposit->date }}</td>
+                                    <td>${{ $deposit->amount }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
