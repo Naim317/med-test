@@ -8,29 +8,16 @@
 </p>
 
 ## To Run This Project
-
+<br/>
 >>> composer install/composer update
 <br/>
-...<br/>
-...<br/>
-...<br/>
 >>> cp .env.example .env
 <br/>
-...<br/>
-...<br/>
-...<br/>
 >>> php artisan key:generate
 <br/>
-...<br/>
-...<br/>
-...<br/>
 >>> php artisan migrate
 <br/>
-...<br/>
-...<br/>
-...<br/>
 >>> php artisan serve
-<br/>
 
 There you Gooo...
 
