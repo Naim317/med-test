@@ -23,7 +23,7 @@ Auth::routes();
 // Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 
-Route::get('/', [TransactionController::class, 'index'])->name('transaction.index');
+Route::get('/home', [TransactionController::class, 'index'])->name('transaction.index');
 Route::get('/deposit', [TransactionController::class, 'showDeposits'])->name('transaction.showDeposits');
 Route::post('/deposit', [TransactionController::class, 'deposit'])->name('transaction.deposit');
 Route::get('/withdrawal', [TransactionController::class, 'showWithdrawals'])->name('transaction.showWithdrawals');
