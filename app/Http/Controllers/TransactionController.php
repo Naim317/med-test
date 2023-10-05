@@ -110,11 +110,13 @@ class TransactionController extends Controller
             }    
         }
         // Check if the user is a Business account and the total withdrawal exceeds 50K then decrease fees
-        elseif ($accountType === 'Business' && $totalWithdrawalThisMonth >= 50000 && $withdrawalAmount > 50000){
-            $fee = $withdrawalAmount * 0.015;
-            $withdrawalAmount += $fee;
-            $finalWithdrawalAmount = $withdrawalAmount;
+        elseif ($accountType === 'Business' && $totalWithdrawalThisMonth+$withdrawalAmount > 50000){
+                $fee = $withdrawalAmount * 0.015;
+                $withdrawalAmount += $fee;
+                $finalWithdrawalAmount = $withdrawalAmount;
         }
+
+        
         // For Normal case
         else {
             $fee = $withdrawalAmount * ($accountType === 'Individual' ? 0.015 : 0.025);
